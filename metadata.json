@@ -1,0 +1,6 @@
+{
+  "name": "VS Code Web Studio",
+  "description": "A complete browser-based Visual Studio Code workbench with multi-tab syntax-highlighted editor, file explorer, global search, Git diff & source control, interactive terminal, live preview, and theme switcher.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
