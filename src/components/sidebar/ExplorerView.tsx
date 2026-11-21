@@ -372,7 +372,9 @@ export const ExplorerView: React.FC<ExplorerViewProps> = ({
             className="flex items-center gap-1 min-w-0 truncate"
           >
             {filesExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            <span className="truncate uppercase">{workspaceName}</span>
+            <span className="truncate uppercase">
+              {nodes.length === 0 && workspaceName === 'workspace' ? 'NO FOLDER OPENED' : workspaceName}
+            </span>
           </button>
 
           <div className="flex items-center gap-0.5 shrink-0">
@@ -433,7 +435,42 @@ export const ExplorerView: React.FC<ExplorerViewProps> = ({
               if (draggedId) onMoveNode(draggedId, null);
             }}
           >
-            {renderTree(null, 0)}
+            {nodes.length === 0 && !inlineCreate ? (
+              <div className="px-4 py-4 space-y-2.5 text-[12px]">
+                <p className="opacity-75 leading-relaxed">
+                  You have not yet opened a folder.
+                </p>
+                <button
+                  type="button"
+                  onClick={onOpenLocalFolder}
+                  className="w-full h-[28px] rounded-[2px] font-medium flex items-center justify-center gap-1.5 hover:opacity-90"
+                  style={{
+                    backgroundColor: c.buttonBg,
+                    color: c.buttonFg,
+                  }}
+                >
+                  <FolderUp size={13} />
+                  <span>Open Folder</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInputValue('');
+                    onSetInlineCreate({ parentId: null, type: 'file' });
+                  }}
+                  className="w-full h-[28px] rounded-[2px] font-medium flex items-center justify-center gap-1.5 hover:bg-white/10"
+                  style={{
+                    border: `1px solid ${c.inputBorder}`,
+                    color: c.sidebarFg,
+                  }}
+                >
+                  <FilePlus size={13} />
+                  <span>New File</span>
+                </button>
+              </div>
+            ) : (
+              renderTree(null, 0)
+            )}
           </div>
         )}
       </div>

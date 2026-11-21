@@ -190,7 +190,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           <div className="py-5">
             <div className="text-[13px] font-semibold mb-1">Workspace Storage</div>
             <p className="text-[12px] opacity-70 mb-3">
-              Reset all workspace files, commits, and preferences back to the original starter template.
+              Clear all workspace files, commits, and preferences back to a clean empty workbench.
             </p>
             <button
               type="button"
@@ -202,7 +202,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               }}
             >
               <RotateCcw size={13} />
-              <span>Reset Workspace to Default</span>
+              <span>Reset Workspace</span>
             </button>
           </div>
         </div>

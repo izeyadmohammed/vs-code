@@ -45,8 +45,8 @@ import { CommandItem, CommandPalette } from './components/CommandPalette';
 import { CloudAccountModal } from './components/CloudAccountModal';
 import { GitChangeItem } from './components/sidebar/SourceControlView';
 
-const STORAGE_FILES_KEY = 'vscode_web_files_v1';
-const STORAGE_SETTINGS_KEY = 'vscode_web_settings_v1';
+const STORAGE_FILES_KEY = 'vscode_web_files_v2';
+const STORAGE_SETTINGS_KEY = 'vscode_web_settings_v2';
 
 const DEFAULT_SETTINGS: EditorSettings = {
   theme: 'dark-modern',
@@ -76,7 +76,7 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_FILES_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch {
       // ignore corrupted storage
@@ -94,7 +94,7 @@ export default function App() {
     return DEFAULT_SETTINGS;
   });
 
-  const [workspaceName, setWorkspaceName] = useState('aurora-workspace');
+  const [workspaceName, setWorkspaceName] = useState('workspace');
   const [cloudUser, setCloudUser] = useState<User | null>(null);
   const [cloudModalOpen, setCloudModalOpen] = useState(false);
   const [cloudSyncing, setCloudSyncing] = useState(false);
@@ -177,7 +177,7 @@ export default function App() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const [activeView, setActiveView] = useState<ActivityView>('explorer');
-  const [panelVisible, setPanelVisible] = useState(true);
+  const [panelVisible, setPanelVisible] = useState(false);
   const [panelHeight, setPanelHeight] = useState(210);
   const [panelMaximized, setPanelMaximized] = useState(false);
   const [activeBottomTab, setActiveBottomTab] = useState<BottomTab>('terminal');
@@ -185,9 +185,8 @@ export default function App() {
   // Editor Groups & Tabs
   const [primaryTabs, setPrimaryTabs] = useState<EditorTab[]>([
     { id: 'welcome', kind: 'welcome', title: 'Welcome' },
-    { id: 'file-app-tsx', kind: 'file', fileId: 'file-app-tsx', title: 'App.tsx' },
   ]);
-  const [activePrimaryTabId, setActivePrimaryTabId] = useState<string | null>('file-app-tsx');
+  const [activePrimaryTabId, setActivePrimaryTabId] = useState<string | null>('welcome');
 
   const [splitVisible, setSplitVisible] = useState(false);
   const [secondaryTabs, setSecondaryTabs] = useState<EditorTab[]>([]);
@@ -201,26 +200,16 @@ export default function App() {
 
   // Git State
   const [gitBranch, setGitBranch] = useState('main');
-  const [branches] = useState(['main', 'feat/editor-core', 'fix/terminal-shell']);
+  const [branches] = useState(['main']);
   const [committedSnapshot, setCommittedSnapshot] = useState<Record<string, string>>(() =>
     createInitialSnapshot(INITIAL_FILES)
   );
   const [stagedIds, setStagedIds] = useState<Set<string>>(new Set());
-  const [commits, setCommits] = useState<GitCommit[]>([
-    {
-      id: 'c-init',
-      hash: 'a4f92c1',
-      message: 'Initial workspace scaffold',
-      author: 'Developer',
-      timestamp: Date.now() - 3600_000,
-      filesChanged: INITIAL_FILES.filter((f) => f.type === 'file').length,
-      snapshot: {},
-    },
-  ]);
+  const [commits, setCommits] = useState<GitCommit[]>([]);
 
   // Navigation History
-  const [navHistory, setNavHistory] = useState<string[]>(['file-app-tsx']);
-  const [navIdx, setNavIdx] = useState(0);
+  const [navHistory, setNavHistory] = useState<string[]>([]);
+  const [navIdx, setNavIdx] = useState(-1);
 
   // Editor Interaction State
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
@@ -240,10 +229,7 @@ export default function App() {
 
   // Extensions & Logs
   const [extensions, setExtensions] = useState<ExtensionItem[]>(INITIAL_EXTENSIONS);
-  const [outputLogs, setOutputLogs] = useState<string[]>([
-    '[Workbench] Aurora Workspace initialized.',
-    '[Extension Host] Loaded Prettier, ESLint, GitLens, Live Server.',
-  ]);
+  const [outputLogs, setOutputLogs] = useState<string[]>([]);
   const [debugLogs, setDebugLogs] = useState<
     Array<{ id: string; type: 'log' | 'error' | 'result'; text: string }>
   >([]);
@@ -255,13 +241,7 @@ export default function App() {
       id: 'term-1',
       name: 'bash',
       cwd: '/',
-      lines: [
-        {
-          id: 't-welcome-1',
-          type: 'info',
-          text: 'VS Code Integrated Terminal — type "help" for available commands.',
-        },
-      ],
+      lines: [],
       history: [],
     },
   ]);
@@ -703,11 +683,18 @@ export default function App() {
     (explicitFileId?: string) => {
       const target = explicitFileId
         ? nodes.find((n) => n.id === explicitFileId)
-        : activeFile && (activeFile.language === 'javascript' || activeFile.language === 'typescript')
+        : activeFile &&
+          (activeFile.language === 'javascript' ||
+            activeFile.language === 'typescript' ||
+            activeFile.language === 'html' ||
+            activeFile.language === 'markdown')
         ? activeFile
-        : nodes.find((n) => n.id === 'file-demo-js');
+        : undefined;
 
-      if (!target) return;
+      if (!target) {
+        pushNotification('Open a JavaScript, TypeScript, HTML, or Markdown file to run it.', 'Run', 'info');
+        return;
+      }
 
       if (target.language === 'html' || target.language === 'markdown') {
         openSpecialTab(
@@ -770,7 +757,7 @@ export default function App() {
 
       setDebugLogs((prev) => [...prev, ...captured]);
     },
-    [nodes, activeFile, openSpecialTab]
+    [nodes, activeFile, openSpecialTab, pushNotification]
   );
 
   // Interactive Terminal Command Execution
@@ -838,7 +825,7 @@ export default function App() {
           break;
 
         case 'pwd':
-          pushOut(session.cwd === '/' ? '/workspace/aurora-studio' : `/workspace/aurora-studio${session.cwd}`);
+          pushOut(session.cwd === '/' ? `/${workspaceName}` : `/${workspaceName}${session.cwd}`);
           break;
 
         case 'whoami':
@@ -1038,12 +1025,21 @@ export default function App() {
 
         case 'npm': {
           if (args[0] === 'test') {
+            const pkgNode = nodes.find((n) => n.name === 'package.json' && n.parentId === null);
+            let pkgName = workspaceName;
+            if (pkgNode?.content) {
+              try {
+                pkgName = JSON.parse(pkgNode.content).name || workspaceName;
+              } catch {
+                // ignore invalid json
+              }
+            }
             pushOut(
-              `> aurora-workspace@1.2.0 test\n> vitest run\n\n ✓ src/utils/metrics.ts (2 tests) 4ms\n ✓ Diagnostics scan (${errorCount} errors, ${warningCount} warnings)\n`,
+              `> ${pkgName} test\n\n ✓ Diagnostics scan (${errorCount} errors, ${warningCount} warnings)\n`,
               errorCount > 0 ? 'error' : 'success'
             );
           } else if (args[0] === 'run' && args[1] === 'dev') {
-            pushOut('VITE v6.2.0  ready in 142 ms\n➜  Local:   http://localhost:3000/', 'success');
+            pushOut('VITE ready\n➜  Local:   http://localhost:3000/', 'success');
           } else {
             pushOut('npm scripts: "npm run dev", "npm test"', 'info');
           }
@@ -1067,7 +1063,7 @@ export default function App() {
         )
       );
     },
-    [terminals, nodes, gitChanges, gitBranch, commits, errorCount, warningCount, openFile, handleCreateNode, handleDeleteNode]
+    [terminals, nodes, workspaceName, gitChanges, gitBranch, commits, errorCount, warningCount, openFile, handleCreateNode, handleDeleteNode]
   );
 
   // Global Keyboard Shortcuts
@@ -1633,13 +1629,20 @@ export default function App() {
               }
               onUpdateSettings={(patch) => setSettings((prev) => ({ ...prev, ...patch }))}
               onResetWorkspace={() => {
-                setWorkspaceName('aurora-workspace');
-                setNodes(INITIAL_FILES);
-                const snap = createInitialSnapshot(INITIAL_FILES);
-                setCommittedSnapshot(snap);
-                setSavedContents(snap);
+                setWorkspaceName('workspace');
+                setNodes([]);
+                setCommittedSnapshot({});
+                setSavedContents({});
+                setCommits([]);
+                setStagedIds(new Set());
+                setPrimaryTabs([{ id: 'welcome', kind: 'welcome', title: 'Welcome' }]);
+                setActivePrimaryTabId('welcome');
+                setSecondaryTabs([]);
+                setSplitVisible(false);
+                setOutputLogs([]);
+                setDebugLogs([]);
                 setSettings(DEFAULT_SETTINGS);
-                pushNotification('Workspace reset to initial template.', 'Workbench', 'info');
+                pushNotification('Workspace cleared and reset to clean state.', 'Workbench', 'info');
               }}
               onOpenFile={(fid, ln) => openFile(fid, ln, 'primary')}
               onNewFile={() => {
@@ -1726,12 +1729,20 @@ export default function App() {
                   }
                   onUpdateSettings={(patch) => setSettings((prev) => ({ ...prev, ...patch }))}
                   onResetWorkspace={() => {
-                    setWorkspaceName('aurora-workspace');
-                    setNodes(INITIAL_FILES);
-                    const snap = createInitialSnapshot(INITIAL_FILES);
-                    setCommittedSnapshot(snap);
-                    setSavedContents(snap);
+                    setWorkspaceName('workspace');
+                    setNodes([]);
+                    setCommittedSnapshot({});
+                    setSavedContents({});
+                    setCommits([]);
+                    setStagedIds(new Set());
+                    setPrimaryTabs([{ id: 'welcome', kind: 'welcome', title: 'Welcome' }]);
+                    setActivePrimaryTabId('welcome');
+                    setSecondaryTabs([]);
+                    setSplitVisible(false);
+                    setOutputLogs([]);
+                    setDebugLogs([]);
                     setSettings(DEFAULT_SETTINGS);
+                    pushNotification('Workspace cleared and reset to clean state.', 'Workbench', 'info');
                   }}
                   onOpenFile={(fid, ln) => openFile(fid, ln, 'secondary')}
                   onNewFile={() => {

@@ -306,7 +306,6 @@ export const EditorGroupPane: React.FC<EditorGroupPaneProps> = ({
             onOpenThemes={onOpenThemes}
             onOpenCloudSync={onOpenCloudSync}
             onOpenFile={(fid) => onOpenFile(fid)}
-            onRunPlayground={() => onRunActiveFile('file-demo-js')}
           />
         ) : activeTab.kind === 'settings' ? (
           <SettingsTab

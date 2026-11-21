@@ -6,7 +6,6 @@ import {
   Terminal,
   Palette,
   Command,
-  Play,
   Cloud,
 } from 'lucide-react';
 import { FSNode, ThemeConfig } from '../types/ide';
@@ -24,7 +23,6 @@ interface WelcomeTabProps {
   onOpenThemes: () => void;
   onOpenCloudSync: () => void;
   onOpenFile: (fileId: string) => void;
-  onRunPlayground: () => void;
 }
 
 export const WelcomeTab: React.FC<WelcomeTabProps> = ({
@@ -38,7 +36,6 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
   onOpenThemes,
   onOpenCloudSync,
   onOpenFile,
-  onRunPlayground,
 }) => {
   const c = theme.colors;
 
@@ -104,35 +101,32 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
                   <Terminal size={16} />
                   <span>Open Integrated Terminal...</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={onRunPlayground}
-                  className="flex items-center gap-2.5 py-1 hover:underline text-left"
-                  style={{ color: c.accent }}
-                >
-                  <Play size={16} />
-                  <span>Run src/playground.js</span>
-                </button>
               </div>
             </section>
 
             <section>
               <h2 className="text-[14px] font-medium mb-3">Recent Files</h2>
               <div className="space-y-1.5 text-[13px]">
-                {recentFiles.slice(0, 6).map((file) => (
-                  <button
-                    key={file.id}
-                    type="button"
-                    onClick={() => onOpenFile(file.id)}
-                    className="flex items-center gap-2 py-0.5 hover:underline text-left max-w-full"
-                  >
-                    <FileIcon name={file.name} language={file.language} size={14} />
-                    <span style={{ color: c.accent }}>{file.name}</span>
-                    <span className="opacity-50 text-[12px] truncate">
-                      {getNodePath(allNodes, file.id)}
-                    </span>
-                  </button>
-                ))}
+                {recentFiles.length === 0 ? (
+                  <p className="text-[12px] opacity-55">
+                    No recent files yet. Create a file or open a folder to begin.
+                  </p>
+                ) : (
+                  recentFiles.slice(0, 6).map((file) => (
+                    <button
+                      key={file.id}
+                      type="button"
+                      onClick={() => onOpenFile(file.id)}
+                      className="flex items-center gap-2 py-0.5 hover:underline text-left max-w-full"
+                    >
+                      <FileIcon name={file.name} language={file.language} size={14} />
+                      <span style={{ color: c.accent }}>{file.name}</span>
+                      <span className="opacity-50 text-[12px] truncate">
+                        {getNodePath(allNodes, file.id)}
+                      </span>
+                    </button>
+                  ))
+                )}
               </div>
             </section>
           </div>

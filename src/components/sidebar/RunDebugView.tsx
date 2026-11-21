@@ -43,15 +43,16 @@ export const RunDebugView: React.FC<RunDebugViewProps> = ({
       <div className="p-3 space-y-2 border-b" style={{ borderColor: c.sidebarBorder }}>
         <button
           type="button"
+          disabled={!canRunJs}
           onClick={onRunActiveFile}
-          className="w-full h-[30px] rounded-[2px] text-[12px] font-medium flex items-center justify-center gap-2 transition-colors"
+          className="w-full h-[30px] rounded-[2px] text-[12px] font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-45"
           style={{
             backgroundColor: c.buttonBg,
             color: c.buttonFg,
           }}
         >
           <Play size={13} />
-          <span>{canRunJs ? `Run ${activeFile?.name}` : 'Run src/playground.js'}</span>
+          <span>{canRunJs ? `Run ${activeFile?.name}` : 'Run Active JS/TS File'}</span>
         </button>
 
         {canPreview && (
