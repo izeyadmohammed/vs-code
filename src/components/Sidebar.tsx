@@ -41,6 +41,7 @@ interface SidebarProps {
   onRenameNode: (nodeId: string, newName: string) => void;
   onDeleteNode: (nodeId: string) => void;
   onDuplicateFile: (fileId: string) => void;
+  onDownloadFile: (fileId: string) => void;
   onMoveNode: (nodeId: string, targetFolderId: string | null) => void;
   onOpenLocalFolder: () => void;
   onReplaceAllInWorkspace: (query: string, replacement: string, matchCase: boolean) => number;
@@ -92,6 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onRenameNode,
   onDeleteNode,
   onDuplicateFile,
+  onDownloadFile,
   onMoveNode,
   onOpenLocalFolder,
   onReplaceAllInWorkspace,
@@ -156,6 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onRenameNode={onRenameNode}
             onDeleteNode={onDeleteNode}
             onDuplicateFile={onDuplicateFile}
+            onDownloadFile={onDownloadFile}
             onMoveNode={onMoveNode}
             onOpenLocalFolder={onOpenLocalFolder}
             inlineCreate={inlineCreate}

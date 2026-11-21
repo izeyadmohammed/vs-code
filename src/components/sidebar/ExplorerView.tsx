@@ -12,6 +12,7 @@ import {
   Braces,
   FolderUp,
   History,
+  Download,
 } from 'lucide-react';
 import { EditorTab, FSNode, GitCommit, ThemeConfig } from '../../types/ide';
 import { FileIcon } from '../FileIcon';
@@ -35,6 +36,7 @@ interface ExplorerViewProps {
   onRenameNode: (nodeId: string, newName: string) => void;
   onDeleteNode: (nodeId: string) => void;
   onDuplicateFile: (fileId: string) => void;
+  onDownloadFile: (fileId: string) => void;
   onMoveNode: (nodeId: string, targetFolderId: string | null) => void;
   onOpenLocalFolder: () => void;
   inlineCreate: { parentId: string | null; type: 'file' | 'folder' } | null;
@@ -59,6 +61,7 @@ export const ExplorerView: React.FC<ExplorerViewProps> = ({
   onRenameNode,
   onDeleteNode,
   onDuplicateFile,
+  onDownloadFile,
   onMoveNode,
   onOpenLocalFolder,
   inlineCreate,
@@ -604,18 +607,32 @@ export const ExplorerView: React.FC<ExplorerViewProps> = ({
             Rename
           </button>
           {contextMenu.node.type === 'file' && (
-            <button
-              type="button"
-              onClick={() => {
-                const id = contextMenu.node.id;
-                setContextMenu(null);
-                onDuplicateFile(id);
-              }}
-              className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-white/10"
-            >
-              <Copy size={13} />
-              Duplicate File
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  const id = contextMenu.node.id;
+                  setContextMenu(null);
+                  onDuplicateFile(id);
+                }}
+                className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-white/10"
+              >
+                <Copy size={13} />
+                Duplicate File
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const id = contextMenu.node.id;
+                  setContextMenu(null);
+                  onDownloadFile(id);
+                }}
+                className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-white/10"
+              >
+                <Download size={13} />
+                Download to Device
+              </button>
+            </>
           )}
           <button
             type="button"

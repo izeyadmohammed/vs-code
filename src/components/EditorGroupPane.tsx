@@ -7,6 +7,8 @@ import {
   Play,
   Sparkles,
   FileCode2,
+  Save,
+  Download,
 } from 'lucide-react';
 import {
   EditorSettings,
@@ -56,6 +58,7 @@ interface EditorGroupPaneProps {
   onOpenPreview: (fileId: string) => void;
   onSplitEditor: () => void;
   onFormatDocument: (fileId: string) => void;
+  onDownloadFile: (fileId: string) => void;
 }
 
 export const EditorGroupPane: React.FC<EditorGroupPaneProps> = ({
@@ -92,6 +95,7 @@ export const EditorGroupPane: React.FC<EditorGroupPaneProps> = ({
   onOpenPreview,
   onSplitEditor,
   onFormatDocument,
+  onDownloadFile,
 }) => {
   const c = theme.colors;
   const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0] || null;
@@ -225,15 +229,35 @@ export const EditorGroupPane: React.FC<EditorGroupPaneProps> = ({
             </button>
           )}
           {activeTab?.kind === 'file' && activeFile && (
-            <button
-              type="button"
-              onClick={() => onFormatDocument(activeFile.id)}
-              className="p-1.5 rounded hover:bg-white/10"
-              title="Format Document (Shift+Alt+F)"
-              aria-label="Format Document"
-            >
-              <Sparkles size={13} />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => onSaveFile(activeFile.id)}
+                className="p-1.5 rounded hover:bg-white/10"
+                title="Save File (Ctrl+S)"
+                aria-label="Save File"
+              >
+                <Save size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onDownloadFile(activeFile.id)}
+                className="p-1.5 rounded hover:bg-white/10"
+                title="Download File to Device"
+                aria-label="Download File"
+              >
+                <Download size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onFormatDocument(activeFile.id)}
+                className="p-1.5 rounded hover:bg-white/10"
+                title="Format Document (Shift+Alt+F)"
+                aria-label="Format Document"
+              >
+                <Sparkles size={13} />
+              </button>
+            </>
           )}
           {groupId === 'primary' && (
             <button

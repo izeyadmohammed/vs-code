@@ -39,6 +39,7 @@ interface TitleBarProps {
   onOpenCloudSync: () => void;
   onSaveFile: () => void;
   onSaveAll: () => void;
+  onDownloadFile: () => void;
   onCloseTab: () => void;
   onFormatDocument: () => void;
   onOpenFind: () => void;
@@ -69,6 +70,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onOpenCloudSync,
   onSaveFile,
   onSaveAll,
+  onDownloadFile,
   onCloseTab,
   onFormatDocument,
   onOpenFind,
@@ -101,6 +103,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
       { separator: true },
       { label: 'Save', shortcut: 'Ctrl+S', action: onSaveFile },
       { label: 'Save All', shortcut: 'Ctrl+K S', action: onSaveAll },
+      { label: 'Download File...', action: onDownloadFile },
       { label: 'Supabase Cloud Sync...', action: onOpenCloudSync },
       { separator: true },
       { label: 'Preferences: Settings', shortcut: 'Ctrl+,', action: onOpenSettings },

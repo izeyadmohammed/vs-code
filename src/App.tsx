@@ -445,8 +445,9 @@ export default function App() {
 
       setSavedContents((prev) => ({ ...prev, [targetId]: contentToSave }));
       appendOutput(`Saved ${getNodePath(nodes, targetId)}`);
+      pushNotification(`Saved ${target.name}`, 'File', 'success');
     },
-    [activeFile?.id, nodes, settings.formatOnSave, settings.tabSize, prettierEnabled, appendOutput]
+    [activeFile?.id, nodes, settings.formatOnSave, settings.tabSize, prettierEnabled, appendOutput, pushNotification]
   );
 
   const handleSaveAll = useCallback(() => {
@@ -456,7 +457,32 @@ export default function App() {
     }
     setSavedContents(nextSaved);
     appendOutput('Saved all open workspace files.');
-  }, [nodes, appendOutput]);
+    pushNotification('Saved all workspace files.', 'File', 'success');
+  }, [nodes, appendOutput, pushNotification]);
+
+  const handleDownloadFile = useCallback(
+    (fileId?: string) => {
+      const targetId = fileId || activeFile?.id;
+      if (!targetId) {
+        pushNotification('Open a file first to download it.', 'File', 'info');
+        return;
+      }
+      const target = nodes.find((n) => n.id === targetId && n.type === 'file');
+      if (!target) return;
+
+      const blob = new Blob([target.content ?? ''], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = target.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      pushNotification(`Downloaded "${target.name}" to your device.`, 'File', 'success');
+    },
+    [activeFile?.id, nodes, pushNotification]
+  );
 
   const handleFormatDocument = useCallback(
     (fileId?: string) => {
@@ -1185,6 +1211,12 @@ export default function App() {
       action: () => handleSaveFile(),
     },
     {
+      id: 'download-file',
+      category: 'File',
+      label: 'Download Active File to Device',
+      action: () => handleDownloadFile(),
+    },
+    {
       id: 'format-doc',
       category: 'Format',
       label: 'Format Document',
@@ -1354,6 +1386,7 @@ export default function App() {
         onOpenCloudSync={() => setCloudModalOpen(true)}
         onSaveFile={() => handleSaveFile()}
         onSaveAll={handleSaveAll}
+        onDownloadFile={() => handleDownloadFile()}
         onCloseTab={() => {
           if (activeTabId) closeTab(activeTabId, focusedGroup);
         }}
@@ -1471,6 +1504,7 @@ export default function App() {
               onRenameNode={handleRenameNode}
               onDeleteNode={handleDeleteNode}
               onDuplicateFile={handleDuplicateFile}
+              onDownloadFile={(fid) => handleDownloadFile(fid)}
               onMoveNode={handleMoveNode}
               onOpenLocalFolder={handleOpenLocalFolder}
               onReplaceAllInWorkspace={(query, replacement, matchCase) => {
@@ -1680,6 +1714,7 @@ export default function App() {
               }}
               onSplitEditor={handleToggleSplit}
               onFormatDocument={handleFormatDocument}
+              onDownloadFile={(fid) => handleDownloadFile(fid)}
             />
 
             {/* Secondary Split Editor Group */}
@@ -1780,6 +1815,7 @@ export default function App() {
                   }}
                   onSplitEditor={handleToggleSplit}
                   onFormatDocument={handleFormatDocument}
+                  onDownloadFile={(fid) => handleDownloadFile(fid)}
                 />
               </>
             )}
