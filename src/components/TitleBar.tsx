@@ -37,6 +37,7 @@ interface TitleBarProps {
   onNewFile: () => void;
   onNewFolder: () => void;
   onOpenLocalFolder: () => void;
+  onOpenLocalFiles: () => void;
   onOpenCloudSync: () => void;
   onSaveFile: () => void;
   onSaveAll: () => void;
@@ -68,6 +69,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onNewFile,
   onNewFolder,
   onOpenLocalFolder,
+  onOpenLocalFiles,
   onOpenCloudSync,
   onSaveFile,
   onSaveAll,
@@ -101,6 +103,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
       { label: 'New Text File', shortcut: 'Ctrl+N', action: onNewFile },
       { label: 'New Folder...', action: onNewFolder },
       { label: 'Open Local Folder...', action: onOpenLocalFolder },
+      { label: 'Open File(s) from Device...', action: onOpenLocalFiles },
       { separator: true },
       { label: 'Save', shortcut: 'Ctrl+S', action: onSaveFile },
       { label: 'Save All', shortcut: 'Ctrl+K S', action: onSaveAll },

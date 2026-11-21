@@ -28,7 +28,12 @@ import {
   normalizePath,
 } from './utils/fsHelpers';
 import { formatCode, runWorkspaceDiagnostics } from './utils/linter';
-import { loadDirectoryFromFileList } from './utils/localFolderLoader';
+import {
+  loadDirectoryFromFileList,
+  loadDirectoryFromHandle,
+  loadFromDataTransfer,
+  LoadedWorkspaceResult,
+} from './utils/localFolderLoader';
 import { syncWorkspaceModels } from './lib/monacoSetup';
 import {
   pullWorkspaceFromSupabase,
@@ -44,6 +49,7 @@ import { StatusBar } from './components/StatusBar';
 import { CommandItem, CommandPalette } from './components/CommandPalette';
 import { CloudAccountModal } from './components/CloudAccountModal';
 import { OfflineIndicator } from './components/PWAInstallButton';
+import { NotificationToasts } from './components/NotificationToasts';
 import { GitChangeItem } from './components/sidebar/SourceControlView';
 
 const STORAGE_FILES_KEY = 'vscode_web_files_v2';
@@ -103,6 +109,8 @@ export default function App() {
   const [syncMode, setSyncMode] = useState<'table' | 'metadata' | null>(null);
   const [monacoMarkers, setMonacoMarkers] = useState<DiagnosticItem[]>([]);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const filesInputRef = useRef<HTMLInputElement>(null);
+  const fileHandlesRef = useRef<Record<string, FileSystemFileHandle>>({});
 
   const theme = THEMES[settings.theme] || THEMES['dark-modern'];
 
@@ -447,6 +455,19 @@ export default function App() {
       setSavedContents((prev) => ({ ...prev, [targetId]: contentToSave }));
       appendOutput(`Saved ${getNodePath(nodes, targetId)}`);
       pushNotification(`Saved ${target.name}`, 'File', 'success');
+
+      const nativeHandle = fileHandlesRef.current[targetId];
+      if (nativeHandle) {
+        (async () => {
+          try {
+            const writable = await nativeHandle.createWritable();
+            await writable.write(contentToSave);
+            await writable.close();
+          } catch {
+            // Browser denied write permission or handle expired; local workspace state remains saved
+          }
+        })();
+      }
     },
     [activeFile?.id, nodes, settings.formatOnSave, settings.tabSize, prettierEnabled, appendOutput, pushNotification]
   );
@@ -619,8 +640,116 @@ export default function App() {
     []
   );
 
-  const handleOpenLocalFolder = useCallback(() => {
-    folderInputRef.current?.click();
+  const applyLoadedWorkspace = useCallback(
+    (loaded: LoadedWorkspaceResult, mergeFiles = false) => {
+      if (loaded.nodes.length === 0) {
+        pushNotification(
+          loaded.skippedCount > 0
+            ? `Folder contained ${loaded.skippedCount} binary/ignored items and no readable text or code files.`
+            : 'Selected folder is empty or has no readable files.',
+          'Explorer',
+          'warning'
+        );
+        return;
+      }
+
+      setSidebarVisible(true);
+      setActiveView('explorer');
+
+      if (mergeFiles) {
+        setNodes((prev) => {
+          const existingRootNames = new Set(
+            prev.filter((n) => n.parentId === null).map((n) => n.name)
+          );
+          const filteredNew = loaded.nodes.filter(
+            (n) => !(n.parentId === null && existingRootNames.has(n.name))
+          );
+          const replaced = prev.map((existing) => {
+            if (existing.parentId !== null) return existing;
+            const match = loaded.nodes.find(
+              (n) => n.parentId === null && n.name === existing.name && n.type === existing.type
+            );
+            return match ? { ...existing, content: match.content, language: match.language } : existing;
+          });
+          return [...replaced, ...filteredNew];
+        });
+        const firstFile = loaded.nodes.find((n) => n.type === 'file');
+        if (firstFile) {
+          setSavedContents((prev) => ({ ...prev, [firstFile.id]: firstFile.content ?? '' }));
+          setPrimaryTabs((prev) =>
+            prev.some((t) => t.id === firstFile.id)
+              ? prev
+              : [...prev, { id: firstFile.id, kind: 'file', fileId: firstFile.id, title: firstFile.name }]
+          );
+          setActivePrimaryTabId(firstFile.id);
+        }
+        const fileCount = loaded.nodes.filter((n) => n.type === 'file').length;
+        pushNotification(`Opened ${fileCount} file(s) in Explorer.`, 'Explorer', 'success');
+        appendOutput(`[Explorer] Opened ${fileCount} local file(s)`);
+        return;
+      }
+
+      fileHandlesRef.current = loaded.fileHandles || {};
+      setWorkspaceName(loaded.workspaceName);
+      setNodes(loaded.nodes);
+      const snap = createInitialSnapshot(loaded.nodes);
+      setSavedContents(snap);
+      setCommittedSnapshot(snap);
+      const firstFile = loaded.nodes.find((n) => n.type === 'file');
+      setPrimaryTabs(
+        firstFile
+          ? [{ id: firstFile.id, kind: 'file', fileId: firstFile.id, title: firstFile.name }]
+          : [{ id: 'welcome', kind: 'welcome', title: 'Welcome' }]
+      );
+      setActivePrimaryTabId(firstFile ? firstFile.id : 'welcome');
+      setSplitVisible(false);
+      setSecondaryTabs([]);
+      const fileCount = loaded.nodes.filter((n) => n.type === 'file').length;
+      const folderCount = loaded.nodes.filter((n) => n.type === 'folder').length;
+      pushNotification(
+        `Opened "${loaded.workspaceName}" (${fileCount} files, ${folderCount} folders)`,
+        'Explorer',
+        'success'
+      );
+      appendOutput(`[Explorer] Loaded local folder "${loaded.workspaceName}"`);
+    },
+    [pushNotification, appendOutput]
+  );
+
+  const handleOpenLocalFolder = useCallback(async () => {
+    const win = window as unknown as {
+      showDirectoryPicker?: (opts?: { mode?: 'read' | 'readwrite' }) => Promise<FileSystemDirectoryHandle>;
+    };
+
+    if (typeof win.showDirectoryPicker === 'function') {
+      try {
+        const dirHandle = await win.showDirectoryPicker({ mode: 'readwrite' });
+        const loaded = await loadDirectoryFromHandle(dirHandle);
+        applyLoadedWorkspace(loaded, false);
+        return;
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          return;
+        }
+        // SecurityError (iframe) or unsupported in this context -> fall back to webkitdirectory input
+      }
+    }
+
+    const inputEl = folderInputRef.current;
+    if (inputEl && 'webkitdirectory' in inputEl) {
+      inputEl.click();
+    } else if (filesInputRef.current) {
+      pushNotification(
+        'Folder selection is restricted in this browser. Pick multiple files instead.',
+        'Explorer',
+        'info'
+      );
+      filesInputRef.current.click();
+    }
+  }, [applyLoadedWorkspace, pushNotification]);
+
+  const handleOpenLocalFiles = useCallback(() => {
+    filesInputRef.current?.click();
   }, []);
 
   const handleFolderSelected = useCallback(
@@ -629,33 +758,31 @@ export default function App() {
       if (!files || files.length === 0) return;
       try {
         const loaded = await loadDirectoryFromFileList(files);
-        if (loaded.nodes.length === 0) {
-          pushNotification('No supported text/code files found in selected folder.', 'Explorer', 'warning');
-          return;
-        }
-        setWorkspaceName(loaded.workspaceName);
-        setNodes(loaded.nodes);
-        const snap = createInitialSnapshot(loaded.nodes);
-        setSavedContents(snap);
-        setCommittedSnapshot(snap);
-        const firstFile = loaded.nodes.find((n) => n.type === 'file');
-        setPrimaryTabs(
-          firstFile
-            ? [{ id: firstFile.id, kind: 'file', fileId: firstFile.id, title: firstFile.name }]
-            : [{ id: 'welcome', kind: 'welcome', title: 'Welcome' }]
-        );
-        setActivePrimaryTabId(firstFile ? firstFile.id : 'welcome');
-        setSplitVisible(false);
-        setSecondaryTabs([]);
-        pushNotification(`Opened local folder "${loaded.workspaceName}" (${loaded.nodes.length} items)`, 'Explorer', 'success');
-        appendOutput(`[Explorer] Loaded local project "${loaded.workspaceName}"`);
+        // If browser returned files without folder structure (common on Android/mobile), merge cleanly
+        applyLoadedWorkspace(loaded, !loaded.hasRelativePaths && nodes.length > 0);
       } catch (err) {
         pushNotification(err instanceof Error ? err.message : 'Failed to load folder', 'Explorer', 'error');
       } finally {
         e.target.value = '';
       }
     },
-    [pushNotification, appendOutput]
+    [applyLoadedWorkspace, nodes.length, pushNotification]
+  );
+
+  const handleFilesSelected = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      try {
+        const loaded = await loadDirectoryFromFileList(files);
+        applyLoadedWorkspace(loaded, true);
+      } catch (err) {
+        pushNotification(err instanceof Error ? err.message : 'Failed to open files', 'Explorer', 'error');
+      } finally {
+        e.target.value = '';
+      }
+    },
+    [applyLoadedWorkspace, pushNotification]
   );
 
   const handlePushToCloud = useCallback(async () => {
@@ -1205,6 +1332,20 @@ export default function App() {
       },
     },
     {
+      id: 'open-folder',
+      category: 'File',
+      label: 'Open Local Folder...',
+      action: () => {
+        void handleOpenLocalFolder();
+      },
+    },
+    {
+      id: 'open-files',
+      category: 'File',
+      label: 'Open File(s) from Device...',
+      action: handleOpenLocalFiles,
+    },
+    {
       id: 'save-file',
       category: 'File',
       label: 'Save Active File',
@@ -1339,8 +1480,21 @@ export default function App() {
           '--vscode-focus-border': theme.colors.focusBorder,
         } as React.CSSProperties
       }
+      onDragOver={(e) => {
+        if (e.dataTransfer?.types?.includes('Files')) {
+          e.preventDefault();
+        }
+      }}
+      onDrop={async (e) => {
+        if (!e.dataTransfer?.types?.includes('Files')) return;
+        e.preventDefault();
+        const loaded = await loadFromDataTransfer(e.dataTransfer);
+        if (loaded) {
+          applyLoadedWorkspace(loaded, !loaded.hasRelativePaths && nodes.length > 0);
+        }
+      }}
     >
-      {/* Hidden Local Folder Picker Input */}
+      {/* Hidden Local Folder & File Picker Inputs */}
       <input
         ref={folderInputRef}
         type="file"
@@ -1349,6 +1503,13 @@ export default function App() {
         webkitdirectory=""
         className="hidden"
         onChange={handleFolderSelected}
+      />
+      <input
+        ref={filesInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={handleFilesSelected}
       />
 
       {/* Top Title Bar */}
@@ -1384,6 +1545,7 @@ export default function App() {
           setInlineCreate({ parentId: null, type: 'folder' });
         }}
         onOpenLocalFolder={handleOpenLocalFolder}
+        onOpenLocalFiles={handleOpenLocalFiles}
         onOpenCloudSync={() => setCloudModalOpen(true)}
         onSaveFile={() => handleSaveFile()}
         onSaveAll={handleSaveAll}
@@ -1508,6 +1670,7 @@ export default function App() {
               onDownloadFile={(fid) => handleDownloadFile(fid)}
               onMoveNode={handleMoveNode}
               onOpenLocalFolder={handleOpenLocalFolder}
+              onOpenLocalFiles={handleOpenLocalFiles}
               onReplaceAllInWorkspace={(query, replacement, matchCase) => {
                 let total = 0;
                 const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1686,6 +1849,7 @@ export default function App() {
                 setInlineCreate({ parentId: null, type: 'file' });
               }}
               onOpenLocalFolder={handleOpenLocalFolder}
+              onOpenLocalFiles={handleOpenLocalFiles}
               onOpenQuickOpen={() => {
                 setPaletteInitial('');
                 setPaletteOpen(true);
@@ -1787,6 +1951,7 @@ export default function App() {
                     setInlineCreate({ parentId: null, type: 'file' });
                   }}
                   onOpenLocalFolder={handleOpenLocalFolder}
+                  onOpenLocalFiles={handleOpenLocalFiles}
                   onOpenQuickOpen={() => {
                     setPaletteInitial('');
                     setPaletteOpen(true);
@@ -1967,7 +2132,8 @@ export default function App() {
         onPullWorkspace={handlePullFromCloud}
       />
 
-      {/* Offline PWA Status Toast */}
+      {/* Visible Toast Notifications & Offline PWA Status */}
+      <NotificationToasts theme={theme} notifications={notifications} />
       <OfflineIndicator theme={theme} />
     </div>
   );

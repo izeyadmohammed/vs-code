@@ -50,6 +50,7 @@ interface EditorGroupPaneProps {
   onOpenFile: (fileId: string, line?: number) => void;
   onNewFile: () => void;
   onOpenLocalFolder: () => void;
+  onOpenLocalFiles: () => void;
   onOpenQuickOpen: () => void;
   onOpenTerminal: () => void;
   onOpenThemes: () => void;
@@ -87,6 +88,7 @@ export const EditorGroupPane: React.FC<EditorGroupPaneProps> = ({
   onOpenFile,
   onNewFile,
   onOpenLocalFolder,
+  onOpenLocalFiles,
   onOpenQuickOpen,
   onOpenTerminal,
   onOpenThemes,
@@ -176,7 +178,7 @@ export const EditorGroupPane: React.FC<EditorGroupPaneProps> = ({
                 ) : (
                   <FileCode2 size={14} style={{ color: c.accent }} />
                 )}
-                <span className="whitespace-nowrap">{tab.title}</span>
+                <span dir="ltr" className="whitespace-nowrap">{tab.title}</span>
 
                 <button
                   type="button"
@@ -289,7 +291,7 @@ export const EditorGroupPane: React.FC<EditorGroupPaneProps> = ({
                 {part.type === 'file' && (
                   <FileIcon name={part.name} language={activeFile.language} size={12} />
                 )}
-                <span className={idx === breadcrumbs.length - 1 ? 'opacity-100' : 'opacity-80'}>
+                <span dir="ltr" className={idx === breadcrumbs.length - 1 ? 'opacity-100' : 'opacity-80'}>
                   {part.name}
                 </span>
               </span>
@@ -325,6 +327,7 @@ export const EditorGroupPane: React.FC<EditorGroupPaneProps> = ({
             allNodes={nodes}
             onNewFile={onNewFile}
             onOpenLocalFolder={onOpenLocalFolder}
+            onOpenLocalFiles={onOpenLocalFiles}
             onOpenQuickOpen={onOpenQuickOpen}
             onOpenTerminal={onOpenTerminal}
             onOpenThemes={onOpenThemes}

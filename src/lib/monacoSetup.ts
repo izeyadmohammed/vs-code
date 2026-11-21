@@ -253,7 +253,7 @@ export function syncWorkspaceModels(nodes: FSNode[]) {
   for (const node of nodes) {
     if (node.type !== 'file') continue;
     const relPath = getNodePath(nodes, node.id);
-    const uri = monaco.Uri.parse(`file:///${relPath}`);
+    const uri = monaco.Uri.file('/' + relPath);
     activeUris.add(uri.toString());
 
     const monacoLang = mapToMonacoLanguage(node.language);

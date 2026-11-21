@@ -3,6 +3,7 @@ import {
   FilePlus,
   FolderOpen,
   FolderUp,
+  FileUp,
   Terminal,
   Palette,
   Command,
@@ -19,6 +20,7 @@ interface WelcomeTabProps {
   allNodes: FSNode[];
   onNewFile: () => void;
   onOpenLocalFolder: () => void;
+  onOpenLocalFiles: () => void;
   onOpenQuickOpen: () => void;
   onOpenTerminal: () => void;
   onOpenThemes: () => void;
@@ -32,6 +34,7 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
   allNodes,
   onNewFile,
   onOpenLocalFolder,
+  onOpenLocalFiles,
   onOpenQuickOpen,
   onOpenTerminal,
   onOpenThemes,
@@ -73,7 +76,16 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
                   style={{ color: c.accent }}
                 >
                   <FolderUp size={16} />
-                  <span>Open Local Folder from PC...</span>
+                  <span>Open Local Folder from Device...</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenLocalFiles}
+                  className="flex items-center gap-2.5 py-1 hover:underline text-left"
+                  style={{ color: c.accent }}
+                >
+                  <FileUp size={16} />
+                  <span>Open File(s) from Device...</span>
                 </button>
                 <button
                   type="button"

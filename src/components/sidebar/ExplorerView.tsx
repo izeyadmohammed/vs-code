@@ -11,6 +11,7 @@ import {
   Copy,
   Braces,
   FolderUp,
+  FileUp,
   History,
   Download,
 } from 'lucide-react';
@@ -39,6 +40,7 @@ interface ExplorerViewProps {
   onDownloadFile: (fileId: string) => void;
   onMoveNode: (nodeId: string, targetFolderId: string | null) => void;
   onOpenLocalFolder: () => void;
+  onOpenLocalFiles: () => void;
   inlineCreate: { parentId: string | null; type: 'file' | 'folder' } | null;
   onSetInlineCreate: (val: { parentId: string | null; type: 'file' | 'folder' } | null) => void;
 }
@@ -64,6 +66,7 @@ export const ExplorerView: React.FC<ExplorerViewProps> = ({
   onDownloadFile,
   onMoveNode,
   onOpenLocalFolder,
+  onOpenLocalFiles,
   inlineCreate,
   onSetInlineCreate,
 }) => {
@@ -285,7 +288,7 @@ export const ExplorerView: React.FC<ExplorerViewProps> = ({
                     isOpen={node.isOpen}
                     size={14}
                   />
-                  <span className="truncate">{node.name}</span>
+                  <span dir="ltr" className="truncate">{node.name}</span>
                 </span>
 
                 <span className="flex items-center gap-1 shrink-0 text-[11px] font-mono">
@@ -356,7 +359,7 @@ export const ExplorerView: React.FC<ExplorerViewProps> = ({
                       <X size={12} />
                     </button>
                     {node && <FileIcon name={node.name} language={node.language} size={13} />}
-                    <span className="truncate">{tab.title}</span>
+                    <span dir="ltr" className="truncate">{tab.title}</span>
                   </span>
                   {isDirty && <span className="text-[10px]">●</span>}
                 </div>
@@ -411,10 +414,19 @@ export const ExplorerView: React.FC<ExplorerViewProps> = ({
               type="button"
               onClick={onOpenLocalFolder}
               className="p-0.5 rounded hover:bg-white/10"
-              title="Open Local Folder from PC..."
+              title="Open Local Folder..."
               aria-label="Open Local Folder"
             >
               <FolderUp size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={onOpenLocalFiles}
+              className="p-0.5 rounded hover:bg-white/10"
+              title="Open File(s) from Device..."
+              aria-label="Open Local Files"
+            >
+              <FileUp size={14} />
             </button>
             <button
               type="button"
@@ -454,6 +466,18 @@ export const ExplorerView: React.FC<ExplorerViewProps> = ({
                 >
                   <FolderUp size={13} />
                   <span>Open Folder</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenLocalFiles}
+                  className="w-full h-[28px] rounded-[2px] font-medium flex items-center justify-center gap-1.5 hover:bg-white/10"
+                  style={{
+                    border: `1px solid ${c.inputBorder}`,
+                    color: c.sidebarFg,
+                  }}
+                >
+                  <FileUp size={13} />
+                  <span>Open Files from Device</span>
                 </button>
                 <button
                   type="button"

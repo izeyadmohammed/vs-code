@@ -44,6 +44,7 @@ interface SidebarProps {
   onDownloadFile: (fileId: string) => void;
   onMoveNode: (nodeId: string, targetFolderId: string | null) => void;
   onOpenLocalFolder: () => void;
+  onOpenLocalFiles: () => void;
   onReplaceAllInWorkspace: (query: string, replacement: string, matchCase: boolean) => number;
   onToggleStage: (fileId: string) => void;
   onStageAll: () => void;
@@ -96,6 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDownloadFile,
   onMoveNode,
   onOpenLocalFolder,
+  onOpenLocalFiles,
   onReplaceAllInWorkspace,
   onToggleStage,
   onStageAll,
@@ -161,6 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onDownloadFile={onDownloadFile}
             onMoveNode={onMoveNode}
             onOpenLocalFolder={onOpenLocalFolder}
+            onOpenLocalFiles={onOpenLocalFiles}
             inlineCreate={inlineCreate}
             onSetInlineCreate={onSetInlineCreate}
           />
