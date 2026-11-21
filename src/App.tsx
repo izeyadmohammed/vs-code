@@ -43,6 +43,7 @@ import { BottomPanel } from './components/BottomPanel';
 import { StatusBar } from './components/StatusBar';
 import { CommandItem, CommandPalette } from './components/CommandPalette';
 import { CloudAccountModal } from './components/CloudAccountModal';
+import { OfflineIndicator } from './components/PWAInstallButton';
 import { GitChangeItem } from './components/sidebar/SourceControlView';
 
 const STORAGE_FILES_KEY = 'vscode_web_files_v2';
@@ -1965,6 +1966,9 @@ export default function App() {
         onPushWorkspace={handlePushToCloud}
         onPullWorkspace={handlePullFromCloud}
       />
+
+      {/* Offline PWA Status Toast */}
+      <OfflineIndicator theme={theme} />
     </div>
   );
 }

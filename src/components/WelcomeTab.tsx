@@ -11,6 +11,7 @@ import {
 import { FSNode, ThemeConfig } from '../types/ide';
 import { getNodePath } from '../utils/fsHelpers';
 import { FileIcon } from './FileIcon';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface WelcomeTabProps {
   theme: ThemeConfig;
@@ -101,6 +102,7 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
                   <Terminal size={16} />
                   <span>Open Integrated Terminal...</span>
                 </button>
+                <PWAInstallButton theme={theme} variant="welcome" />
               </div>
             </section>
 

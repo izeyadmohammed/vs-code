@@ -11,6 +11,7 @@ import {
   Cloud,
 } from 'lucide-react';
 import { ThemeConfig } from '../types/ide';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface MenuItem {
   label?: string;
@@ -295,8 +296,9 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         </button>
       </div>
 
-      {/* Right: Layout Toggles, Cloud Sync & Theme Switch */}
+      {/* Right: Layout Toggles, Install App, Cloud Sync & Theme Switch */}
       <div className="flex items-center gap-1 shrink-0">
+        <PWAInstallButton theme={theme} variant="toolbar" />
         <button
           type="button"
           onClick={onOpenCloudSync}
